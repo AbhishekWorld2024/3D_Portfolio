@@ -35,8 +35,15 @@ export default function ChatButton() {
     }
   }, [messages, loading]);
 
+  // Clear the conversation every time the chat is opened, so each session
+  // starts fresh with just the greeting.
   useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 300);
+    if (open) {
+      setMessages([GREETING]);
+      setInput('');
+      setLoading(false);
+      setTimeout(() => inputRef.current?.focus(), 300);
+    }
   }, [open]);
 
   async function send(text: string) {

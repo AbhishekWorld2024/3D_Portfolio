@@ -6,7 +6,6 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import Anthropic from '@anthropic-ai/sdk';
 import { knowledgeBase } from './knowledgeBase.js';
 
 const app = express();
@@ -14,9 +13,18 @@ app.use(cors());
 app.use(express.json());
 
 const PORT = process.env.PORT || 3001;
-const MODEL = process.env.ANTHROPIC_MODEL || 'claude-3-5-haiku-latest';
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+// LLM provider: "ollama" (free, local — default) or "anthropic" (cloud API key).
+const PROVIDER = (process.env.LLM_PROVIDER || 'ollama').toLowerCase();
+
+// Ollama config (used when PROVIDER === 'ollama')
+const OLLAMA_HOST = process.env.OLLAMA_HOST || 'http://localhost:11434';
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3';
+
+// Anthropic config (used when PROVIDER === 'anthropic')
+const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-3-5-haiku-latest';
+
+const ACTIVE_MODEL = PROVIDER === 'anthropic' ? ANTHROPIC_MODEL : OLLAMA_MODEL;
 
 // ----------------------------------------------------------------- RAG
 // Lightweight keyword / TF-style retrieval. The corpus is tiny, so this is
@@ -103,14 +111,52 @@ ${context}
 === END CONTEXT ===`;
 }
 
+// Generate a reply from the chosen provider. Returns a plain string.
+async function generateReply({ system, messages }) {
+  if (PROVIDER === 'anthropic') {
+    if (!process.env.ANTHROPIC_API_KEY) {
+      throw new Error('Missing ANTHROPIC_API_KEY. Add it to .env or set LLM_PROVIDER=ollama.');
+    }
+    // Lazy import so the SDK is only loaded when actually used.
+    const { default: Anthropic } = await import('@anthropic-ai/sdk');
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const response = await anthropic.messages.create({
+      model: ANTHROPIC_MODEL,
+      max_tokens: 700,
+      system,
+      messages,
+    });
+    return response.content
+      .filter((b) => b.type === 'text')
+      .map((b) => b.text)
+      .join('\n')
+      .trim();
+  }
+
+  // Default: Ollama (free, local). Native chat API.
+  const res = await fetch(`${OLLAMA_HOST}/api/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: OLLAMA_MODEL,
+      stream: false,
+      options: { temperature: 0.3, num_predict: 700 },
+      messages: [{ role: 'system', content: system }, ...messages],
+    }),
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new Error(`Ollama request failed (${res.status}). Is Ollama running and is the "${OLLAMA_MODEL}" model installed? ${detail}`);
+  }
+  const data = await res.json();
+  return (data.message?.content || '').trim();
+}
+
 app.post('/api/chat', async (req, res) => {
   try {
     const { message, history } = req.body || {};
     if (!message || typeof message !== 'string') {
       return res.status(400).json({ error: 'A "message" string is required.' });
-    }
-    if (!process.env.ANTHROPIC_API_KEY) {
-      return res.status(500).json({ error: 'Server is missing ANTHROPIC_API_KEY. Add it to your .env file.' });
     }
 
     // 1) RETRIEVE
@@ -127,18 +173,10 @@ app.post('/api/chat', async (req, res) => {
     const messages = [...priorTurns, { role: 'user', content: message }];
 
     // 3) GENERATE
-    const response = await anthropic.messages.create({
-      model: MODEL,
-      max_tokens: 700,
+    const reply = await generateReply({
       system: buildSystemPrompt(contextChunks),
       messages,
     });
-
-    const reply = response.content
-      .filter((b) => b.type === 'text')
-      .map((b) => b.text)
-      .join('\n')
-      .trim();
 
     res.json({
       reply: reply || "Sorry, I couldn't generate a response. Please try again.",
@@ -146,13 +184,14 @@ app.post('/api/chat', async (req, res) => {
     });
   } catch (err) {
     console.error('[chat] error:', err);
-    res.status(500).json({ error: 'Something went wrong generating a response. Please try again.' });
+    res.status(500).json({ error: err.message || 'Something went wrong generating a response. Please try again.' });
   }
 });
 
-app.get('/api/health', (_req, res) => res.json({ ok: true, model: MODEL }));
+app.get('/api/health', (_req, res) => res.json({ ok: true, provider: PROVIDER, model: ACTIVE_MODEL }));
 
 app.listen(PORT, () => {
   console.log(`✅ Portfolio chatbot API running on http://localhost:${PORT}`);
-  console.log(`   Model: ${MODEL}  |  KB chunks: ${knowledgeBase.length}`);
+  console.log(`   Provider: ${PROVIDER}  |  Model: ${ACTIVE_MODEL}  |  KB chunks: ${knowledgeBase.length}`);
+  if (PROVIDER === 'ollama') console.log(`   Ollama host: ${OLLAMA_HOST}`);
 });

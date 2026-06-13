@@ -82,6 +82,27 @@ The site runs at `http://localhost:5173` and the chatbot API at
 └── vite.config.ts          # Dev proxy: /api → Express server
 ```
 
+## Deploy for Free (Vercel + Groq)
+
+Make the portfolio publicly accessible with a fast, free, always-on chatbot.
+Ollama only runs locally, so production uses **Groq** (free cloud LLM API).
+
+1. **Get a free Groq API key** at [console.groq.com/keys](https://console.groq.com/keys).
+2. **Push the repo to GitHub** (already done if you cloned it from there).
+3. **Import the repo on [vercel.com](https://vercel.com)** → "Add New Project" → select this repo.
+   Vercel auto-detects Vite; no build config needed.
+4. **Add Environment Variables** in the Vercel project settings:
+   | Name             | Value                         |
+   |------------------|-------------------------------|
+   | `LLM_PROVIDER`   | `groq`                        |
+   | `GROQ_API_KEY`   | `gsk_...` (your Groq key)     |
+   | `GROQ_MODEL`     | `llama-3.3-70b-versatile`     |
+5. **Deploy.** Your site goes live at `https://<project>.vercel.app`, and the
+   chatbot answers via the `api/chat` serverless function.
+
+The same RAG + LLM code (`server/rag.js`, `server/llm.js`) powers both local
+dev (Ollama) and production (Groq) — only the `LLM_PROVIDER` env var changes.
+
 ## How the Chatbot Works
 
 1. **Retrieve** — the visitor's question is tokenized and scored against every

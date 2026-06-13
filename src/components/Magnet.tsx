@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, ReactNode } from 'react';
+import { useRef, useCallback, type ReactNode } from 'react';
 
 interface MagnetProps {
   children: ReactNode;
@@ -18,7 +18,6 @@ export default function Magnet({
   className = '',
 }: MagnetProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const [active, setActive] = useState(false);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     const el = ref.current;
@@ -32,11 +31,9 @@ export default function Magnet({
     const threshold = Math.max(rect.width, rect.height) / 2 + padding;
 
     if (dist < threshold) {
-      setActive(true);
       el.style.transition = activeTransition;
       el.style.transform = `translate3d(${dx / strength}px, ${dy / strength}px, 0)`;
     } else {
-      setActive(false);
       el.style.transition = inactiveTransition;
       el.style.transform = 'translate3d(0, 0, 0)';
     }
@@ -45,7 +42,6 @@ export default function Magnet({
   const handleMouseLeave = useCallback(() => {
     const el = ref.current;
     if (!el) return;
-    setActive(false);
     el.style.transition = inactiveTransition;
     el.style.transform = 'translate3d(0, 0, 0)';
   }, [inactiveTransition]);

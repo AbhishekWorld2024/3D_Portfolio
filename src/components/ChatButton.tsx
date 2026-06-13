@@ -9,9 +9,9 @@ interface ChatMessage {
 const GRADIENT = 'linear-gradient(123deg, #18011F 7%, #B600A8 37%, #7621B0 72%, #BE4C00 100%)';
 
 const SUGGESTIONS = [
-  'What is his work experience?',
+  'Is he open to new roles?',
   'What are his top skills?',
-  'Tell me about his projects',
+  'What was the hardest part of his projects?',
   'Is he free on Saturday?',
 ];
 

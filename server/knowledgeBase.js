@@ -27,6 +27,13 @@ export const knowledgeBase = [
     text: `Contact Abhishek Arugonda — Email: abhishekarugonda3@gmail.com. Phone: +1 (785) 550-2806. LinkedIn: linkedin.com/in/abhishek-arugonda. GitHub: github.com/AbhishekWorld2024. He is open to connecting about software engineering and AI engineering opportunities.`,
   },
 
+  {
+    id: 'availability',
+    title: 'Availability & What He Is Looking For',
+    keywords: ['available', 'availability', 'open to work', 'hiring', 'hire', 'new role', 'opportunity', 'opportunities', 'looking for', 'next role', 'relocate', 'relocation', 'location', 'remote', 'hybrid', 'onsite', 'interview', 'start date', 'notice period', 'sponsorship', 'visa', 'work authorization', 'h1b', 'opt'],
+    text: `Availability — Abhishek is open to new Software Engineer opportunities, focused on backend, microservices, and cloud-native roles (Java, Spring Boot, AWS), and he also enjoys AI/LLM-adjacent engineering work. He is based in the Austin, Texas metropolitan area and is open to relocating anywhere in the US, as well as remote or hybrid roles. He is happy to schedule interviews or calls — reach him at abhishekarugonda3@gmail.com. (Work authorization: he is currently on US OPT and will require H1B visa sponsorship for long-term employment.)`,
+  },
+
   // ------------------------------------------------------------- EXPERIENCE
   {
     id: 'exp-cigna',
@@ -85,6 +92,19 @@ Stack: Python, Flask, Machine Learning, MongoDB, REST APIs, JWT.`,
 - Implemented secure user authentication using JWT and role-based access control.
 - Designed a modular backend architecture for scalable and maintainable services.
 Stack: ReactJS, Node.js, Express, MongoDB, JWT, REST APIs.`,
+  },
+
+  {
+    id: 'project-healthcare-deepdive',
+    title: 'Project Deep-Dive — AI Healthcare System',
+    keywords: ['healthcare deep dive', 'healthcare challenge', 'healthcare impact', 'how did he build healthcare', 'why flask', 'disease prediction', 'ml architecture', 'hardest part'],
+    text: `Deep-dive — AI-Powered Healthcare Management System. Challenge: unify traditional healthcare workflows (patient registration, appointment scheduling, doctor management) with ML-based disease prediction in one reliable platform. Approach: built RESTful Flask services with a modular architecture so multiple ML models could be integrated and swapped independently; enforced role-based access (patients, doctors, admin) with secure session handling; stored records in MongoDB. Impact: improved diagnostic-assistance workflows by surfacing likely conditions from user symptoms, and the modular design made the system straightforward to extend with new models.`,
+  },
+  {
+    id: 'project-ecommerce-deepdive',
+    title: 'Project Deep-Dive — E-Commerce Platform',
+    keywords: ['ecommerce deep dive', 'ecommerce challenge', 'ecommerce impact', 'how did he build ecommerce', 'cart architecture', 'order processing', 'authentication design', 'hardest part'],
+    text: `Deep-dive — Full-Stack E-Commerce Platform. Challenge: deliver a complete shopping experience (catalog, cart, orders) with secure authentication and a maintainable codebase. Approach: designed a modular backend with RESTful APIs cleanly separating authentication, product handling, and order processing; implemented JWT-based auth with role-based access control; built a ReactJS frontend against a Node/Express API backed by MongoDB. Impact: a scalable, maintainable architecture where new features can be added without disrupting existing services.`,
   },
 
   // ----------------------------------------------------------------- SKILLS

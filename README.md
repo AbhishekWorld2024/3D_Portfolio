@@ -28,13 +28,16 @@ architecture.
 | Styling      | Tailwind CSS, custom gradients               |
 | Animation    | Framer Motion                                |
 | Backend      | Node.js, Express                             |
-| AI / RAG     | Anthropic Claude API, keyword-based retrieval|
+| AI / RAG     | Ollama (local LLM, default) or Anthropic Claude API; keyword-based retrieval; streaming responses |
 
 ## Getting Started
 
 ### Prerequisites
 - Node.js 18+
-- An [Anthropic API key](https://console.anthropic.com/settings/keys)
+- **[Ollama](https://ollama.com)** (free, local — default), then pull a model:
+  `ollama pull llama3.2:1b` (fast) — or `llama3.2` / `llama3` for higher quality.
+- _Optional:_ an [Anthropic API key](https://console.anthropic.com/settings/keys)
+  if you'd rather use Claude (set `LLM_PROVIDER=anthropic`).
 
 ### Installation
 
@@ -42,13 +45,15 @@ architecture.
 # 1. Install dependencies
 npm install
 
-# 2. Configure environment
+# 2. Configure environment (defaults to Ollama — no key needed)
 cp .env.example .env
-# then edit .env and add your ANTHROPIC_API_KEY
 
 # 3. Run the app (starts the API server + Vite dev server together)
 npm run dev
 ```
+
+> Responses stream token-by-token, so text starts appearing in ~2-3s.
+> `llama3.2:1b` is the default model for fast responses on CPU-only machines.
 
 The site runs at `http://localhost:5173` and the chatbot API at
 `http://localhost:3001`. Click **Chat With Me** to talk to the assistant.

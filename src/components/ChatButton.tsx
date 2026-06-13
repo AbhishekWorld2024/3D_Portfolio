@@ -65,12 +65,49 @@ export default function ChatButton() {
           history: nextMessages.slice(1), // drop the local greeting
         }),
       });
-      const data = await res.json();
-      const reply: string =
-        data.reply ||
-        data.error ||
-        "Sorry, something went wrong. Please try again.";
-      setMessages((m) => [...m, { role: 'assistant', content: reply }]);
+
+      // Non-streamed error responses come back as JSON.
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok && contentType.includes('application/json')) {
+        const data = await res.json();
+        setMessages((m) => [
+          ...m,
+          { role: 'assistant', content: data.error || 'Sorry, something went wrong.' },
+        ]);
+        return;
+      }
+
+      // Stream the reply token-by-token so text appears as it's generated.
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (reader) {
+        let acc = '';
+        let started = false;
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          acc += decoder.decode(value, { stream: true });
+          if (!started && acc) {
+            // First token arrived: swap the typing dots for the live bubble.
+            started = true;
+            setLoading(false);
+            setMessages((m) => [...m, { role: 'assistant', content: acc }]);
+          } else {
+            setMessages((m) => {
+              const copy = [...m];
+              copy[copy.length - 1] = { role: 'assistant', content: acc };
+              return copy;
+            });
+          }
+        }
+        if (!started) {
+          setMessages((m) => [
+            ...m,
+            { role: 'assistant', content: "Sorry, I couldn't generate a response. Please try again." },
+          ]);
+        }
+      }
     } catch {
       setMessages((m) => [
         ...m,

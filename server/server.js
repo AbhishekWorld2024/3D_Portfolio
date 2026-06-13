@@ -21,6 +21,12 @@ const PROVIDER = (process.env.LLM_PROVIDER || 'ollama').toLowerCase();
 const OLLAMA_HOST = process.env.OLLAMA_HOST || 'http://localhost:11434';
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3';
 
+// Generation tuning. num_ctx MUST be identical between warm-up and real
+// requests, otherwise Ollama reloads the model (a multi-second cold start)
+// every time and we lose the keep-alive benefit.
+const NUM_CTX = Number(process.env.OLLAMA_NUM_CTX || 1536);
+const NUM_PREDICT = Number(process.env.OLLAMA_NUM_PREDICT || 150);
+
 // Anthropic config (used when PROVIDER === 'anthropic')
 const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-3-5-haiku-latest';
 
@@ -89,67 +95,96 @@ function retrieve(query, topK = 4) {
 }
 
 // ----------------------------------------------------------------- LLM
+// Cap each chunk so the prompt stays small — on CPU, prompt size is the main
+// driver of latency. Keeps the most important leading facts of each chunk.
+const MAX_CHUNK_CHARS = Number(process.env.MAX_CHUNK_CHARS || 480);
+
+function trimChunk(text) {
+  if (text.length <= MAX_CHUNK_CHARS) return text;
+  return text.slice(0, MAX_CHUNK_CHARS).replace(/\s+\S*$/, '') + '…';
+}
+
 function buildSystemPrompt(contextChunks) {
   const context = contextChunks
-    .map((c) => `### ${c.title}\n${c.text}`)
+    .map((c) => `### ${c.title}\n${trimChunk(c.text)}`)
     .join('\n\n');
 
-  return `You are Abhishek Arugonda's personal portfolio assistant — an expert in Software Engineering and AI Engineering who speaks on Abhishek's behalf.
+  return `You are Abhishek Arugonda's portfolio assistant (expert in Software & AI Engineering). Answer visitor questions about Abhishek using ONLY the context.
 
-Your job: answer visitor questions about Abhishek using ONLY the context below. The context is retrieved from Abhishek's resume, projects, skills, certifications, and weekly schedule.
-
-Rules:
-- Answer warmly and professionally, in a concise, well-structured way (use short paragraphs or bullet points).
-- Refer to Abhishek in the third person ("Abhishek", "he").
-- Use ONLY facts present in the context. Never invent companies, dates, numbers, or details.
-- If the answer is not in the context, say you don't have that detail and suggest contacting Abhishek directly (email abhishekarugonda3@gmail.com).
-- For schedule/availability questions, summarize the relevant day(s) naturally rather than dumping the raw table.
-- Keep responses focused and to the point.
+Rules: Be BRIEF (2-4 sentences or a few bullets, no padding). Third person ("Abhishek", "he"). Use only facts in the context — never invent companies, dates, or numbers. If it's not in the context, say so and suggest emailing abhishekarugonda3@gmail.com.
 
 === CONTEXT ===
 ${context}
 === END CONTEXT ===`;
 }
 
-// Generate a reply from the chosen provider. Returns a plain string.
-async function generateReply({ system, messages }) {
+// Stream a reply token-by-token to `res` (plain text/event-stream of deltas).
+// Streaming means the visitor sees words appear within ~2-3s instead of
+// waiting for the whole answer — the key to a responsive feel on CPU.
+async function streamReply({ system, messages, res }) {
   if (PROVIDER === 'anthropic') {
     if (!process.env.ANTHROPIC_API_KEY) {
       throw new Error('Missing ANTHROPIC_API_KEY. Add it to .env or set LLM_PROVIDER=ollama.');
     }
-    // Lazy import so the SDK is only loaded when actually used.
     const { default: Anthropic } = await import('@anthropic-ai/sdk');
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const response = await anthropic.messages.create({
+    const stream = anthropic.messages.stream({
       model: ANTHROPIC_MODEL,
-      max_tokens: 700,
+      max_tokens: 600,
       system,
       messages,
     });
-    return response.content
-      .filter((b) => b.type === 'text')
-      .map((b) => b.text)
-      .join('\n')
-      .trim();
+    for await (const event of stream) {
+      if (event.type === 'content_block_delta' && event.delta?.type === 'text_delta') {
+        res.write(event.delta.text);
+      }
+    }
+    return;
   }
 
-  // Default: Ollama (free, local). Native chat API.
-  const res = await fetch(`${OLLAMA_HOST}/api/chat`, {
+  // Default: Ollama (free, local) — native streaming chat API.
+  const upstream = await fetch(`${OLLAMA_HOST}/api/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: OLLAMA_MODEL,
-      stream: false,
-      options: { temperature: 0.3, num_predict: 700 },
+      stream: true,
+      keep_alive: '30m', // keep model resident between requests (no cold reload)
+      options: {
+        temperature: 0.2,
+        num_predict: NUM_PREDICT,
+        num_ctx: NUM_CTX, // must match warm-up to avoid reloads
+      },
       messages: [{ role: 'system', content: system }, ...messages],
     }),
   });
-  if (!res.ok) {
-    const detail = await res.text().catch(() => '');
-    throw new Error(`Ollama request failed (${res.status}). Is Ollama running and is the "${OLLAMA_MODEL}" model installed? ${detail}`);
+  if (!upstream.ok || !upstream.body) {
+    const detail = await upstream.text().catch(() => '');
+    throw new Error(`Ollama request failed (${upstream.status}). Is Ollama running and is "${OLLAMA_MODEL}" installed? ${detail}`);
   }
-  const data = await res.json();
-  return (data.message?.content || '').trim();
+
+  // Ollama streams newline-delimited JSON; forward each token's content.
+  const reader = upstream.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      try {
+        const json = JSON.parse(trimmed);
+        const delta = json.message?.content;
+        if (delta) res.write(delta);
+      } catch {
+        // ignore partial/non-JSON lines
+      }
+    }
+  }
 }
 
 app.post('/api/chat', async (req, res) => {
@@ -159,39 +194,73 @@ app.post('/api/chat', async (req, res) => {
       return res.status(400).json({ error: 'A "message" string is required.' });
     }
 
-    // 1) RETRIEVE
-    const contextChunks = retrieve(message, 4);
+    // 1) RETRIEVE — fewer chunks = shorter prompt = faster generation.
+    const contextChunks = retrieve(message, 2);
 
-    // 2) AUGMENT — build messages with prior turns for conversational context.
+    // 2) AUGMENT — keep only the last couple of turns to keep the prompt small.
     const priorTurns = Array.isArray(history)
       ? history
           .filter((m) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
-          .slice(-6)
+          .slice(-4)
           .map((m) => ({ role: m.role, content: m.content }))
       : [];
 
     const messages = [...priorTurns, { role: 'user', content: message }];
 
-    // 3) GENERATE
-    const reply = await generateReply({
+    // 3) GENERATE (streamed) — send plain text deltas as they arrive.
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders?.();
+
+    await streamReply({
       system: buildSystemPrompt(contextChunks),
       messages,
+      res,
     });
-
-    res.json({
-      reply: reply || "Sorry, I couldn't generate a response. Please try again.",
-      sources: contextChunks.map((c) => c.title),
-    });
+    res.end();
   } catch (err) {
     console.error('[chat] error:', err);
-    res.status(500).json({ error: err.message || 'Something went wrong generating a response. Please try again.' });
+    if (res.headersSent) {
+      // Already streaming — append the error so the client sees something.
+      res.write(`\n\n[Error: ${err.message || 'generation failed'}]`);
+      res.end();
+    } else {
+      res.status(500).json({ error: err.message || 'Something went wrong generating a response. Please try again.' });
+    }
   }
 });
 
 app.get('/api/health', (_req, res) => res.json({ ok: true, provider: PROVIDER, model: ACTIVE_MODEL }));
 
+// Preload the model into memory at startup so the first user question is fast
+// (avoids a multi-second cold start on the first request).
+async function warmUpOllama() {
+  if (PROVIDER !== 'ollama') return;
+  try {
+    await fetch(`${OLLAMA_HOST}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: OLLAMA_MODEL,
+        stream: false,
+        keep_alive: '30m',
+        messages: [{ role: 'user', content: 'hi' }],
+        // Same num_ctx as real requests so the model stays resident (no reload).
+        options: { num_predict: 1, num_ctx: NUM_CTX },
+      }),
+    });
+    console.log(`   🔥 Model "${OLLAMA_MODEL}" warmed up and resident in memory.`);
+  } catch {
+    console.log(`   ⚠️  Could not warm up Ollama — is it running at ${OLLAMA_HOST}?`);
+  }
+}
+
 app.listen(PORT, () => {
   console.log(`✅ Portfolio chatbot API running on http://localhost:${PORT}`);
   console.log(`   Provider: ${PROVIDER}  |  Model: ${ACTIVE_MODEL}  |  KB chunks: ${knowledgeBase.length}`);
-  if (PROVIDER === 'ollama') console.log(`   Ollama host: ${OLLAMA_HOST}`);
+  if (PROVIDER === 'ollama') {
+    console.log(`   Ollama host: ${OLLAMA_HOST}`);
+    warmUpOllama();
+  }
 });

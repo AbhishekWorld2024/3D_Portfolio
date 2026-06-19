@@ -4,20 +4,25 @@
 //   - "ollama"    → local Ollama (free, runs on your machine — best for dev)
 //   - "anthropic" → Anthropic Claude API (paid)
 
-export const PROVIDER = (process.env.LLM_PROVIDER || 'ollama').toLowerCase();
+// Read an env var with surrounding whitespace/tabs stripped — a stray space or
+// tab pasted into a dashboard value (e.g. "\tllama-3.3-70b-versatile") would
+// otherwise produce confusing 404 "model does not exist" errors.
+const env = (name, fallback) => (process.env[name]?.trim() || fallback);
+
+export const PROVIDER = env('LLM_PROVIDER', 'ollama').toLowerCase();
 
 // Groq (OpenAI-compatible API)
-const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+const GROQ_MODEL = env('GROQ_MODEL', 'llama-3.3-70b-versatile');
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 // Ollama (local)
-const OLLAMA_HOST = process.env.OLLAMA_HOST || 'http://localhost:11434';
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3.2:1b';
+const OLLAMA_HOST = env('OLLAMA_HOST', 'http://localhost:11434');
+const OLLAMA_MODEL = env('OLLAMA_MODEL', 'llama3.2:1b');
 const NUM_CTX = Number(process.env.OLLAMA_NUM_CTX || 1536);
 const NUM_PREDICT = Number(process.env.OLLAMA_NUM_PREDICT || 150);
 
 // Anthropic (cloud)
-const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-3-5-haiku-latest';
+const ANTHROPIC_MODEL = env('ANTHROPIC_MODEL', 'claude-3-5-haiku-latest');
 
 export const ACTIVE_MODEL =
   PROVIDER === 'groq' ? GROQ_MODEL
@@ -61,7 +66,7 @@ export async function streamReply({ system, messages, res }) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+        Authorization: `Bearer ${process.env.GROQ_API_KEY.trim()}`,
       },
       body: JSON.stringify({
         model: GROQ_MODEL,

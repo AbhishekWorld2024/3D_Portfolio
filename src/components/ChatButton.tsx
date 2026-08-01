@@ -21,6 +21,13 @@ const GREETING: ChatMessage = {
     "Hi! I'm Abhishek's AI assistant. Ask me anything about his experience, AI/ML skills, projects, or background.",
 };
 
+// Endpoint of the Python RAG service (FastAPI, POST /chat -> { answer, sources }).
+// Configurable so production can point at a deployed URL via VITE_CHAT_API_URL;
+// defaults to the local dev server on port 8000.
+const CHAT_API_URL =
+  (import.meta.env?.VITE_CHAT_API_URL as string | undefined) ??
+  'http://localhost:8000/chat';
+
 export default function ChatButton() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([GREETING]);
@@ -57,64 +64,35 @@ export default function ChatButton() {
     setLoading(true);
 
     try {
-      const res = await fetch('/api/chat', {
+      // Python RAG API: single-turn, returns JSON { answer, sources }.
+      const res = await fetch(CHAT_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: trimmed,
-          history: nextMessages.slice(1), // drop the local greeting
-        }),
+        body: JSON.stringify({ query: trimmed }),
       });
 
-      // Non-streamed error responses come back as JSON.
-      const contentType = res.headers.get('content-type') || '';
-      if (!res.ok && contentType.includes('application/json')) {
-        const data = await res.json();
-        setMessages((m) => [
-          ...m,
-          { role: 'assistant', content: data.error || 'Sorry, something went wrong.' },
-        ]);
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        // FastAPI errors come back as { detail: "..." }.
+        const msg =
+          (data && (data.detail || data.error)) || 'Sorry, something went wrong.';
+        setMessages((m) => [...m, { role: 'assistant', content: String(msg) }]);
         return;
       }
 
-      // Stream the reply token-by-token so text appears as it's generated.
-      const reader = res.body?.getReader();
-      const decoder = new TextDecoder();
-
-      if (reader) {
-        let acc = '';
-        let started = false;
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          acc += decoder.decode(value, { stream: true });
-          if (!started && acc) {
-            // First token arrived: swap the typing dots for the live bubble.
-            started = true;
-            setLoading(false);
-            setMessages((m) => [...m, { role: 'assistant', content: acc }]);
-          } else {
-            setMessages((m) => {
-              const copy = [...m];
-              copy[copy.length - 1] = { role: 'assistant', content: acc };
-              return copy;
-            });
-          }
-        }
-        if (!started) {
-          setMessages((m) => [
-            ...m,
-            { role: 'assistant', content: "Sorry, I couldn't generate a response. Please try again." },
-          ]);
-        }
-      }
+      const answer =
+        data && typeof data.answer === 'string' && data.answer.trim()
+          ? data.answer
+          : "Sorry, I couldn't generate a response. Please try again.";
+      setMessages((m) => [...m, { role: 'assistant', content: answer }]);
     } catch {
       setMessages((m) => [
         ...m,
         {
           role: 'assistant',
           content:
-            "I couldn't reach the server. Make sure the chat API is running (npm run dev), then try again.",
+            "I couldn't reach the chatbot. Make sure the Python RAG API is running (uvicorn main:app --port 8000), then try again.",
         },
       ]);
     } finally {

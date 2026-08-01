@@ -49,7 +49,7 @@ CHUNK_OVERLAP: int = int(os.getenv("CHUNK_OVERLAP", "80"))
 # Number of chunks to retrieve per query, and the search strategy.
 #   "similarity" — pure nearest-neighbour (fast, default)
 #   "mmr"        — Maximal Marginal Relevance (diversifies results)
-RETRIEVER_K: int = int(os.getenv("RETRIEVER_K", "6"))
+RETRIEVER_K: int = int(os.getenv("RETRIEVER_K", "4"))
 RETRIEVER_SEARCH_TYPE: str = os.getenv("RETRIEVER_SEARCH_TYPE", "mmr")
 
 
@@ -62,7 +62,7 @@ RETRIEVER_SEARCH_TYPE: str = os.getenv("RETRIEVER_SEARCH_TYPE", "mmr")
 #                   downloads the model on first use — requires network once)
 #   "ollama"      — a local Ollama model, e.g. nomic-embed-text (free, fully
 #                   offline once pulled; no API key)
-EMBEDDING_PROVIDER: str = os.getenv("EMBEDDING_PROVIDER", "openai").lower()
+EMBEDDING_PROVIDER: str = os.getenv("EMBEDDING_PROVIDER", "ollama").lower()
 OPENAI_EMBEDDING_MODEL: str = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
 HF_EMBEDDING_MODEL: str = os.getenv("HF_EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
 OLLAMA_EMBEDDING_MODEL: str = os.getenv("OLLAMA_EMBEDDING_MODEL", "nomic-embed-text")
@@ -76,12 +76,18 @@ OLLAMA_BASE_URL: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 # LLM (chat completion)
 # --------------------------------------------------------------------------- #
 # LLM_PROVIDER selects the chat backend:
-#   "openai" — OpenAI (or any OpenAI-compatible endpoint via OPENAI_BASE_URL,
-#              e.g. Groq). Default model gpt-4o-mini.
-#   "ollama" — a local Ollama chat model (free, offline; no API key).
-LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "openai").lower()
-LLM_MODEL: str = os.getenv("LLM_MODEL", "gpt-4o-mini")
+#   "ollama" — a local Ollama chat model (default; free, offline; no API key).
+#   "openai" — OpenAI, or any OpenAI-compatible endpoint via OPENAI_BASE_URL
+#              (e.g. Groq). Remember to set LLM_MODEL to a matching model name.
+LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "ollama").lower()
+LLM_MODEL: str = os.getenv("LLM_MODEL", "llama3.2:1b")
 LLM_TEMPERATURE: float = float(os.getenv("LLM_TEMPERATURE", "0.2"))
+# Cap the generated answer length. Bounds worst-case latency (the slow part on
+# CPU is token generation) and keeps portfolio answers concise.
+LLM_MAX_TOKENS: int = int(os.getenv("LLM_MAX_TOKENS", "220"))
+# How long Ollama keeps the model resident in memory between requests, so it
+# doesn't reload on every call.
+OLLAMA_KEEP_ALIVE: str = os.getenv("OLLAMA_KEEP_ALIVE", "30m")
 
 # Credentials / endpoint overrides — read from the environment only.
 OPENAI_API_KEY: str | None = os.getenv("OPENAI_API_KEY")
@@ -150,6 +156,8 @@ def get_llm():
             model=LLM_MODEL,
             temperature=LLM_TEMPERATURE,
             base_url=OLLAMA_BASE_URL,
+            num_predict=LLM_MAX_TOKENS,
+            keep_alive=OLLAMA_KEEP_ALIVE,
         )
 
     if LLM_PROVIDER == "openai":
@@ -160,6 +168,7 @@ def get_llm():
             temperature=LLM_TEMPERATURE,
             api_key=OPENAI_API_KEY,
             base_url=OPENAI_BASE_URL,
+            max_tokens=LLM_MAX_TOKENS,
         )
 
     raise ValueError(

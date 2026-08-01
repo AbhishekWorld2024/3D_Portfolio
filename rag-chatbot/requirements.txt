@@ -1,0 +1,28 @@
+# --- Core RAG stack ---
+langchain>=0.3.0
+langchain-community>=0.3.0
+langchain-openai>=0.2.0
+langchain-chroma>=0.1.4
+langchain-text-splitters>=0.3.0
+chromadb>=0.5.0
+
+# --- API layer ---
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+pydantic>=2.7.0
+
+# --- Config / loaders ---
+python-dotenv>=1.0.0
+pypdf>=4.2.0          # PDF loading (PyPDFLoader)
+tiktoken>=0.7.0       # tokenizer used by OpenAI embeddings
+
+# --- Optional: free local models via Ollama (EMBEDDING_PROVIDER/LLM_PROVIDER=ollama) ---
+# Lightweight; requires a running Ollama server (https://ollama.com) with the
+# models pulled:  ollama pull nomic-embed-text  &&  ollama pull llama3.2
+langchain-ollama>=0.2.0
+
+# --- Optional: free local embeddings via HuggingFace (EMBEDDING_PROVIDER=huggingface) ---
+# Heavy (pulls in torch). Install only if you want this route:
+#   pip install langchain-huggingface sentence-transformers
+# langchain-huggingface>=0.1.0
+# sentence-transformers>=3.0.0

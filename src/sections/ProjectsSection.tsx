@@ -3,28 +3,25 @@ import FadeIn from '../components/FadeIn';
 const projects = [
   {
     num: '01',
-    name: 'AI-Powered Healthcare Management System',
-    stack: ['Python', 'Flask', 'Machine Learning', 'MongoDB', 'REST APIs', 'JWT'],
+    name: 'HealthGuard AI — Real-Time Healthcare Monitoring & Compliance Platform',
+    stack: ['Java Spring Boot', 'AWS Lambda', 'SQS', 'DynamoDB', 'API Gateway', 'ReactJS', 'RAG'],
     highlights: [
-      'Engineered full-stack healthcare platform enabling patient registration, appointment scheduling, and doctor management',
-      'Built ML models for disease prediction based on user symptoms, improving diagnostic assistance workflows',
-      'Developed RESTful backend services using Flask to handle user data, appointments, and real-time interactions',
-      'Implemented role-based access (patients, doctors, admin) with secure session handling and data management',
-      'Structured for scalability with modular architecture and integration of multiple ML models',
+      'Developed Java Spring Boot microservices and AI-powered rule engines to monitor healthcare workflows, improving compliance event-detection accuracy and reducing manual review by 30%',
+      'Architected scalable cloud-native solutions using AWS Lambda, SQS, DynamoDB, and API Gateway, supporting high-volume healthcare transactions with high availability and fault tolerance',
+      'Built ReactJS dashboards and LLM-powered knowledge retrieval using RAG techniques, accelerating access to healthcare policies and documentation',
     ],
     image: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=1200&q=80',
   },
   {
     num: '02',
-    name: 'Full-Stack E-Commerce Platform',
-    stack: ['ReactJS', 'Node.js', 'Express', 'MongoDB', 'JWT', 'REST APIs'],
+    name: 'InsightCampus — AI-Powered Academic Analytics & Reporting Platform',
+    stack: ['Java Spring Boot', 'ReactJS', 'PostgreSQL', 'Python', 'Apache Airflow', 'RAG'],
     highlights: [
-      'Developed a full-stack e-commerce system with product catalog, cart, and order management',
-      'Built RESTful APIs for authentication, product handling, and order processing',
-      'Implemented secure user authentication using JWT and role-based access control',
-      'Designed modular backend architecture for scalable and maintainable services',
+      'Developed a full-stack academic analytics platform (Java Spring Boot, ReactJS, PostgreSQL) to streamline reporting and provide actionable insights for students, faculty, and administrators',
+      'Engineered Python and Apache Airflow ETL pipelines to consolidate data from multiple university systems, reducing report preparation time by over 60% and improving data accuracy',
+      'Integrated LLM-powered search and RAG-based knowledge retrieval, enabling unified access to academic resources, policies, and institutional information',
     ],
-    image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1200&q=80',
+    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80',
   },
 ];
 

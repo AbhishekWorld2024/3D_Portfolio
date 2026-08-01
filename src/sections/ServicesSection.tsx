@@ -3,28 +3,28 @@ import FadeIn from '../components/FadeIn';
 const services = [
   {
     num: '01',
-    name: 'Backend Development',
-    desc: 'Building scalable backend systems and microservices with Java and Spring Boot, delivering 99.9% availability in high-traffic enterprise environments.',
+    name: 'Generative AI & RAG',
+    desc: 'Designing advanced hybrid RAG systems — dense + sparse retrieval with cross-encoder reranking — that cut p99 latency and eliminate hallucinations over multi-terabyte knowledge bases.',
   },
   {
     num: '02',
-    name: 'Cloud & DevOps',
-    desc: 'Architecting cloud-native solutions on AWS with Docker, Kubernetes, and CI/CD pipelines — enabling seamless deployment, observability, and infrastructure automation.',
+    name: 'Multi-Agent Orchestration',
+    desc: 'Building autonomous multi-agent frameworks with LangGraph and frontier LLMs (Claude, GPT-4) to automate complex, high-stakes workflows across healthcare and banking.',
   },
   {
     num: '03',
-    name: 'Full Stack',
-    desc: 'Crafting end-to-end web applications with ReactJS, Node.js, and REST APIs, from intuitive frontends to robust backend services.',
+    name: 'LLM Fine-Tuning',
+    desc: 'Adapting and fine-tuning LLMs with LoRA, QLoRA, and PEFT, plus custom BERT/RoBERTa transformers for domain-specific NER, classification, and extraction.',
   },
   {
     num: '04',
-    name: 'System Design',
-    desc: 'Designing distributed systems and microservices architectures that scale horizontally, handling millions of transactions with resilience and reliability.',
+    name: 'MLOps & Cloud',
+    desc: 'Productionizing ML on AWS, Azure, and GCP with Docker, Kubernetes, Terraform, and MLflow — automated eval gates, drift tracking, and 99.9% uptime SLAs.',
   },
   {
     num: '05',
-    name: 'AI Integration',
-    desc: 'Integrating Generative AI and LLM APIs to build intelligent, context-aware features that elevate product capabilities and automate complex workflows.',
+    name: 'Low-Latency Microservices',
+    desc: 'Engineering asynchronous FastAPI and Spring Boot services with Redis semantic caching and Kafka streaming to sustain high-concurrency, sub-second workloads.',
   },
 ];
 

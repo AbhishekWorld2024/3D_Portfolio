@@ -18,7 +18,7 @@ const SUGGESTIONS = [
 const GREETING: ChatMessage = {
   role: 'assistant',
   content:
-    "Hi! I'm Abhishek's AI assistant. Ask me anything about his experience, skills, projects, certifications, or even his weekly routine.",
+    "Hi! I'm Abhishek's AI assistant. Ask me anything about his experience, AI/ML skills, projects, or background.",
 };
 
 export default function ChatButton() {

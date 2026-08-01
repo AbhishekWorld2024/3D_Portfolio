@@ -3,7 +3,7 @@ import AnimatedText from '../components/AnimatedText';
 import ChatButton from '../components/ChatButton';
 
 const aboutText =
-  "With 4+ years of experience in software engineering, i design and deliver scalable backend systems, distributed microservices, and cloud-native solutions using Java, Spring Boot, and AWS. I'm passionate about building high-performance systems and integrating cutting-edge AI solutions. Let's build something incredible together!";
+  "A senior ai/ml engineer with 5+ years productionizing enterprise generative AI — autonomous multi-agent orchestration, hybrid RAG, fine-tuned LLMs, and low-latency ML pipelines across healthcare and banking. I specialize in taming hallucinations, context overflow, and p99 latency at scale, all behind 99.9% uptime SLAs. Let's build something intelligent together!";
 
 export default function AboutSection() {
   return (

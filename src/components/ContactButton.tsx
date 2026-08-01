@@ -52,7 +52,7 @@ export default function ContactButton() {
             <div className="w-full flex flex-col gap-4">
               {/* Email */}
               <a
-                href="mailto:abhishekarugonda3@gmail.com"
+                href="mailto:abhishek.arugonda567@gmail.com"
                 className="flex items-center gap-4 rounded-2xl border border-[#D7E2EA]/20 bg-white/5 px-5 py-4 hover:bg-white/10 transition-colors group"
               >
                 <span className="text-2xl">✉️</span>
@@ -61,7 +61,7 @@ export default function ContactButton() {
                     style={{ fontSize: '0.65rem' }}>Email</span>
                   <span className="text-[#D7E2EA] font-medium group-hover:text-white transition-colors"
                     style={{ fontSize: 'clamp(0.75rem, 2vw, 0.9rem)' }}>
-                    abhishekarugonda3@gmail.com
+                    abhishek.arugonda567@gmail.com
                   </span>
                 </div>
               </a>

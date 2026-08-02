@@ -1,0 +1,14 @@
+# The vector store is rebuilt inside the image (see Dockerfile) — don't copy the
+# local one (it was built with a different embedding model / is machine-specific).
+chroma_db/
+
+# Secrets and local cruft.
+.env
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.DS_Store

@@ -66,6 +66,9 @@ EMBEDDING_PROVIDER: str = os.getenv("EMBEDDING_PROVIDER", "ollama").lower()
 OPENAI_EMBEDDING_MODEL: str = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
 HF_EMBEDDING_MODEL: str = os.getenv("HF_EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
 OLLAMA_EMBEDDING_MODEL: str = os.getenv("OLLAMA_EMBEDDING_MODEL", "nomic-embed-text")
+# fastembed: lightweight ONNX embeddings (no torch, no API key) — ideal for
+# small cloud hosts where Ollama isn't available.
+FASTEMBED_MODEL: str = os.getenv("FASTEMBED_MODEL", "BAAI/bge-small-en-v1.5")
 
 # Base URL of a local Ollama server (used by both the ollama embedding and LLM
 # providers). Ollama also exposes an OpenAI-compatible API at <base>/v1.
@@ -137,9 +140,14 @@ def get_embeddings():
 
         return OllamaEmbeddings(model=OLLAMA_EMBEDDING_MODEL, base_url=OLLAMA_BASE_URL)
 
+    if EMBEDDING_PROVIDER == "fastembed":
+        from langchain_community.embeddings import FastEmbedEmbeddings
+
+        return FastEmbedEmbeddings(model_name=FASTEMBED_MODEL)
+
     raise ValueError(
         f"Unknown EMBEDDING_PROVIDER={EMBEDDING_PROVIDER!r}. "
-        "Use 'openai', 'huggingface', or 'ollama'."
+        "Use 'ollama', 'fastembed', 'openai', or 'huggingface'."
     )
 
 

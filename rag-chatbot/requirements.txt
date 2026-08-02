@@ -16,6 +16,10 @@ python-dotenv>=1.0.0
 pypdf>=4.2.0          # PDF loading (PyPDFLoader)
 tiktoken>=0.7.0       # tokenizer used by OpenAI embeddings
 
+# --- Cloud deploy: lightweight ONNX embeddings (EMBEDDING_PROVIDER=fastembed) ---
+# Free, no API key, no torch — fits small hosts (e.g. Render free tier).
+fastembed>=0.3.0
+
 # --- Optional: free local models via Ollama (EMBEDDING_PROVIDER/LLM_PROVIDER=ollama) ---
 # Lightweight; requires a running Ollama server (https://ollama.com) with the
 # models pulled:  ollama pull nomic-embed-text  &&  ollama pull llama3.2

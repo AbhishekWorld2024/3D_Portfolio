@@ -1,0 +1,30 @@
+# Render Blueprint for the Python RAG chatbot backend.
+# In the Render dashboard: New → Blueprint → connect this repo. Render reads
+# this file, builds the Dockerfile in rag-chatbot/, and creates the service.
+#
+# You must set OPENAI_API_KEY (your Groq key) in the dashboard — it is marked
+# sync:false so it is NEVER stored in the repo.
+services:
+  - type: web
+    name: abhishek-rag-chatbot
+    runtime: docker
+    rootDir: rag-chatbot
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      # --- LLM: Groq (fast, OpenAI-compatible) ---
+      - key: LLM_PROVIDER
+        value: openai
+      - key: OPENAI_BASE_URL
+        value: https://api.groq.com/openai/v1
+      - key: LLM_MODEL
+        value: llama-3.3-70b-versatile
+      - key: OPENAI_API_KEY          # your Groq key — set in the dashboard
+        sync: false
+      # --- Embeddings: local ONNX, no key ---
+      - key: EMBEDDING_PROVIDER
+        value: fastembed
+      # --- CORS: set to your Vercel site origin (or * while testing) ---
+      - key: ALLOWED_ORIGINS
+        value: "*"

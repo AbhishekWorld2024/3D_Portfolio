@@ -16,8 +16,13 @@ python-dotenv>=1.0.0
 pypdf>=4.2.0          # PDF loading (PyPDFLoader)
 tiktoken>=0.7.0       # tokenizer used by OpenAI embeddings
 
-# --- Cloud deploy: lightweight ONNX embeddings (EMBEDDING_PROVIDER=fastembed) ---
-# Free, no API key, no torch — fits small hosts (e.g. Render free tier).
+# --- Cloud deploy: Google Gemini embeddings (EMBEDDING_PROVIDER=google) ---
+# Free API (no credit card). Offloads embeddings so the server needs almost no
+# RAM — fits Render's free tier (512MB). Needs GOOGLE_API_KEY.
+langchain-google-genai>=2.0.0
+
+# --- Alt cloud embeddings: lightweight ONNX, no key (EMBEDDING_PROVIDER=fastembed) ---
+# Free/offline but loads a model into RAM (~needs >512MB with the rest of the app).
 fastembed>=0.3.0
 
 # --- Optional: free local models via Ollama (EMBEDDING_PROVIDER/LLM_PROVIDER=ollama) ---

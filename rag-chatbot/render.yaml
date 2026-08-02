@@ -22,9 +22,11 @@ services:
         value: llama-3.3-70b-versatile
       - key: OPENAI_API_KEY          # your Groq key — set in the dashboard
         sync: false
-      # --- Embeddings: local ONNX, no key ---
+      # --- Embeddings: Google Gemini (free API, tiny RAM) ---
       - key: EMBEDDING_PROVIDER
-        value: fastembed
+        value: google
+      - key: GOOGLE_API_KEY          # your Google AI Studio key — set in the dashboard
+        sync: false
       # --- CORS: set to your Vercel site origin (or * while testing) ---
       - key: ALLOWED_ORIGINS
         value: "*"

@@ -69,6 +69,10 @@ OLLAMA_EMBEDDING_MODEL: str = os.getenv("OLLAMA_EMBEDDING_MODEL", "nomic-embed-t
 # fastembed: lightweight ONNX embeddings (no torch, no API key) — ideal for
 # small cloud hosts where Ollama isn't available.
 FASTEMBED_MODEL: str = os.getenv("FASTEMBED_MODEL", "BAAI/bge-small-en-v1.5")
+# Google Gemini embeddings: free API (no credit card). Offloads embeddings off
+# the server so it uses almost no RAM — ideal for tiny hosts (Render free tier).
+GOOGLE_EMBEDDING_MODEL: str = os.getenv("GOOGLE_EMBEDDING_MODEL", "models/text-embedding-004")
+GOOGLE_API_KEY: str | None = os.getenv("GOOGLE_API_KEY")
 
 # Base URL of a local Ollama server (used by both the ollama embedding and LLM
 # providers). Ollama also exposes an OpenAI-compatible API at <base>/v1.
@@ -145,9 +149,16 @@ def get_embeddings():
 
         return FastEmbedEmbeddings(model_name=FASTEMBED_MODEL)
 
+    if EMBEDDING_PROVIDER in ("google", "gemini"):
+        from langchain_google_genai import GoogleGenerativeAIEmbeddings
+
+        return GoogleGenerativeAIEmbeddings(
+            model=GOOGLE_EMBEDDING_MODEL, google_api_key=GOOGLE_API_KEY
+        )
+
     raise ValueError(
         f"Unknown EMBEDDING_PROVIDER={EMBEDDING_PROVIDER!r}. "
-        "Use 'ollama', 'fastembed', 'openai', or 'huggingface'."
+        "Use 'ollama', 'fastembed', 'google', 'openai', or 'huggingface'."
     )
 
 

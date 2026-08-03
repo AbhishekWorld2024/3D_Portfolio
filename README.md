@@ -21,6 +21,9 @@ grounded answer — so replies stay accurate and never hallucinate.
   (vector) search and the top passages are passed to the LLM as context.
 - **Cited, grounded answers** — every reply comes with the source chunks it used,
   and the assistant says "I don't have that detail" instead of inventing facts.
+- **Guardrails & monitoring** — input scanning (prompt-injection, PII, toxicity)
+  and output redaction (leaked secrets / PII), with every trigger logged and
+  counted for observability (`GET /guardrails`).
 - **Runs 100% free & offline** — uses a local **Ollama** model for both
   embeddings and generation; no API keys required (swappable to cloud providers).
 - **Fully responsive** — mobile-first layout with fluid `clamp()` typography.

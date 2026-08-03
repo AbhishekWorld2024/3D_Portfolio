@@ -10,12 +10,21 @@ Run locally:
 
 from __future__ import annotations
 
+import logging
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 import config
+import guardrails
 from rag_chain import VectorStoreNotReadyError, answer_query, get_vectorstore
+
+# Structured logs (guardrail triggers included) go to stdout → visible in Render.
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
 
 app = FastAPI(
     title="Abhishek Portfolio RAG Chatbot",
@@ -84,18 +93,28 @@ def health() -> dict[str, object]:
         "vector_store_ready": ready,
         "detail": detail,
         "config": config.describe(),
+        "guardrail_triggers": guardrails.get_stats(),
     }
+
+
+@app.get("/guardrails")
+def guardrail_stats() -> dict[str, object]:
+    """Monitoring: how many times each guardrail has fired since startup."""
+    return {"triggers": guardrails.get_stats()}
 
 
 @app.post("/chat", response_model=ChatResponse)
 def chat(request: ChatRequest) -> ChatResponse:
-    """Answer a question about Abhishek using the RAG pipeline."""
-    query = request.query.strip()
-    if not query:
-        raise HTTPException(status_code=422, detail="Query must not be empty.")
+    """Answer a question about Abhishek using the RAG pipeline, with guardrails."""
+    # --- INPUT guardrail: block prompt-injection / PII / toxicity up front. ---
+    gate = guardrails.scan_input(request.query)
+    if not gate.allowed:
+        # Graceful 200 with a safe reply so the chat UI shows it naturally.
+        return ChatResponse(answer=gate.message or "", sources=[],
+                            session_id=request.session_id)
 
     try:
-        result = answer_query(query)
+        result = answer_query(gate.query)
     except VectorStoreNotReadyError as exc:
         # 503: the service is up but not yet provisioned — tell the operator how to fix it.
         raise HTTPException(
@@ -110,8 +129,11 @@ def chat(request: ChatRequest) -> ChatResponse:
             detail=f"Failed to generate an answer: {exc}",
         ) from exc
 
+    # --- OUTPUT guardrail: redact any leaked secrets / PII before returning. ---
+    safe = guardrails.scan_output(result["answer"])
+
     return ChatResponse(
-        answer=result["answer"],
+        answer=safe.text,
         sources=[Source(**s) for s in result["sources"]],
         session_id=request.session_id,
     )

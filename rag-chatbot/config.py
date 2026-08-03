@@ -71,7 +71,7 @@ OLLAMA_EMBEDDING_MODEL: str = os.getenv("OLLAMA_EMBEDDING_MODEL", "nomic-embed-t
 FASTEMBED_MODEL: str = os.getenv("FASTEMBED_MODEL", "BAAI/bge-small-en-v1.5")
 # Google Gemini embeddings: free API (no credit card). Offloads embeddings off
 # the server so it uses almost no RAM — ideal for tiny hosts (Render free tier).
-GOOGLE_EMBEDDING_MODEL: str = os.getenv("GOOGLE_EMBEDDING_MODEL", "models/text-embedding-004")
+GOOGLE_EMBEDDING_MODEL: str = os.getenv("GOOGLE_EMBEDDING_MODEL", "models/embedding-001")
 GOOGLE_API_KEY: str | None = os.getenv("GOOGLE_API_KEY")
 
 # Base URL of a local Ollama server (used by both the ollama embedding and LLM
@@ -200,6 +200,9 @@ def describe() -> str:
     embed_model = {
         "openai": OPENAI_EMBEDDING_MODEL,
         "ollama": OLLAMA_EMBEDDING_MODEL,
+        "google": GOOGLE_EMBEDDING_MODEL,
+        "gemini": GOOGLE_EMBEDDING_MODEL,
+        "fastembed": FASTEMBED_MODEL,
     }.get(EMBEDDING_PROVIDER, HF_EMBEDDING_MODEL)
     return (
         f"embed={EMBEDDING_PROVIDER}:{embed_model} "
